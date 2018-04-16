@@ -104,6 +104,7 @@ TODO: make something to check that
 - length of each dict is the same
 - all dimensions have the same names and are same length
 - fix bug when symdict is modified by doing
+- Make this an extension of an ordered dict ...
 >>> dict[x][y] = foo # does not modify dict[y][x]
 """
 
