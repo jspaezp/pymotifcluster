@@ -19,7 +19,7 @@ import matplotlib.pyplot as mpl
 # TODO Decide if you want it 2d or scalable ...
 # TODO state nomenclature for functions, camelcase or underscores
 
-class SymetricDict(collections.MutableMapping):
+class SymetricDict(collections.OrderedDict):
     def __init__(self, keys,*args, **kwargs):
         """
         A symetric dictionary, view usage examples for a a quick demonstration ...
@@ -33,14 +33,14 @@ class SymetricDict(collections.MutableMapping):
         Examples
         --------
         >>> foo = SymetricDict(['A', 'B'])
-        >>> foo.data
-        {'A': {'A': None, 'B': None}, 'B': {'A': None, 'B': None}}
+        >>> foo
+        SymetricDict([('A', OrderedDict([('A', None), ('B', None)])), ('B', OrderedDict([('A', None), ('B', None)]))])
         >>> foo['A', 'B'] = 2 # this replaces the value in both ['A']['B'] and ['B']['A']
-        >>> print(foo.data)
-        {'A': {'A': None, 'B': 2}, 'B': {'A': 2, 'B': None}}
+        >>> print(foo)
+        SymetricDict([('A', OrderedDict([('A', None), ('B', 2)])), ('B', OrderedDict([('A', 2), ('B', None)]))])
         >>> foo['A', 'C'] = 3 # adds the keys when absent
-        >>> print(foo.data)
-        {'A': {'A': None, 'B': 2, 'C': 3}, 'B': {'A': 2, 'B': None}, 'C': {'A': 3}}
+        >>> print(foo)
+        SymetricDict([('A', OrderedDict([('A', None), ('B', 2), ('C', 3)])), ('B', OrderedDict([('A', 2), ('B', None)])), ('C', OrderedDict([('A', 3)]))])
         >>> print(foo['A', 'C']) # and well ...
         3
         >>> print(foo['C', 'A'])
@@ -48,54 +48,53 @@ class SymetricDict(collections.MutableMapping):
         >>> print(foo['C']['A']) # If you want to you can use the standard double square parens notation ...
         3
         """
-        elems = set(keys)
-        my_nested = {}
+
+        super(SymetricDict, self).__init__()
+        elems = list(set(keys))
+        elems.sort()
         for x in elems:
-            if x not in my_nested:
-                my_nested[x] = {}
             for y in elems:
-                my_nested[x][y] = None
-                if y not in my_nested:
-                    my_nested[y] = {}
-                my_nested[y][x] = my_nested[x][y]
-        self.data = my_nested
+                self[x,y] = None
 
     def __getitem__(self, key):
         if (len(key) is 1) or (type(key) is str):
-            val = dict.__getitem__(self.data, key)
+            val = collections.OrderedDict.__getitem__(self, key)
         else:
-            val = functools.reduce(dict.__getitem__, key, self.data)
+            val = functools.reduce(collections.OrderedDict.__getitem__, key, self)
         return(val)
 
     def __setitem__(self, key, val):
         if len(key) is 2:
-            for x, y in itertools.permutations(key, 2):
-                    if x not in self.data:
-                        dict.__setitem__(self.data, x, {})
-                    dict.__setitem__(self.data[x], y, val)
+            for keys in itertools.permutations(key, 2):
+                for x in keys:
+                    if x not in self:
+                        collections.OrderedDict.__setitem__(self, x, collections.OrderedDict())
+                collections.OrderedDict.__setitem__(self[keys[0]], keys[1], val)
         else:
             print("Dont knwo how to deal with that ...")
             print(key)
 
     def __delitem__(self, key):
-        del self.data[self(key)]
+        collections.OrderedDict.__delitem__(self, key)
 
     def __iter__(self):
-        return iter(self.data)
+        return collections.OrderedDict.__iter__(self)
 
     def __len__(self):
-        second_dim_lens = list[set([len(x) for x in self.data.values()])]
-        assert len(second_dim_lens) == 1, 'More than one length for the second dimension of the object'
-        assert len(self.data) == second_dim_lens[0], 'Dim 1 and 2 have differing lengths'
-        return len(self.data)
+        return collections.OrderedDict.__len__(self)
 
-    def __repr__(self):
-        return repr(self.data)
+    def check_lengths(self):
+        second_dim_lens = list([set([len(x) for x in self.values()])])
+        assert len(second_dim_lens) == 1, 'More than one length for the second dimension of the object'
+        assert len(self) == second_dim_lens[0], 'Dim 1 and 2 have differing lengths'
+        return(True)
+
+    # TODO implement __instance_check__
 
     def closest_neighbors(self):
         all_top_values = [
             sorted(range(len(i)), key=lambda a: i[a])[-2:] # TODO, get a way for them not to return themselves ...
-            for i in [list(x.values()) for x in self.data.values()]
+            for i in [list(x.values()) for x in self.values()]
         ]
         return (all_top_values)
 
@@ -130,7 +129,7 @@ def build_2d_dict(combinations):
     >>> print(my_list)
     [('a', 'b'), ('a', 'c'), ('b', 'c')]
     >>> build_2d_dict(itertools.combinations(['a', 'b','c'], 2))
-    {'a': {'b': {}, 'c': {}}, 'b': {'c': {}}}
+    {'a': {'b': None, 'c': None}, 'b': {'a': None, 'c': None}, 'c': {'a': None, 'b': None}}
 
     """
     combinations = list(combinations)
@@ -166,7 +165,7 @@ def getPermutations(letters, n, sort = True, drop_repeats = True):
     --------
     >>> getPermutations("ABA", 2, sort = True, drop_repeats = False) # Note that it outputs repeated elements
     ['AA', 'AA', 'AB', 'AA', 'AA', 'AB', 'BA', 'BA', 'BB']
-    >>> getPermutations("ABA", 2, sorted = False, drop_repeats = True)
+    >>> getPermutations("ABA", 2, sort = False, drop_repeats = True)
     ['BB', 'BA', 'AB', 'AA']
     """
     if drop_repeats:
@@ -241,10 +240,10 @@ def Build_blosum_distance_dict(sequences, verbose = True, scoringmatrx = scoring
 
     Examples
     --------
-    >>> Build_blosum_distance_dict(['PEPTIDE', 'MYPEPTIDE', 'PEPTIDES'], verbose = False)
-    {'PEPTIDE': {'PEPTIDE': 39.0, 'MYPEPTIDE': 39.0, 'PEPTIDES': 39.0}, 'MYPEPTIDE': {'PEPTIDE': 39.0, 'MYPEPTIDE': 51.0, 'PEPTIDES': 39.0}, 'PEPTIDES': {'PEPTIDE': 39.0, 'MYPEPTIDE': 39.0, 'PEPTIDES': 43.0}}
-
+    >>> Build_blosum_distance_dict(['PEP', 'PTY', 'TIDE'], verbose = False)
+    SymetricDict([('PEP', OrderedDict([('PEP', 19.0), ('PTY', 7.0), ('TIDE', 5.0)])), ('PTY', OrderedDict([('PEP', 7.0), ('PTY', 19.0), ('TIDE', 5.0)])), ('TIDE', OrderedDict([('PEP', 5.0), ('PTY', 5.0), ('TIDE', 20.0)]))])
     """
+
     my_dict = SymetricDict(sequences)
 
     for x in my_dict.keys():
@@ -277,19 +276,11 @@ def getNmers(arg, n, fill_missing = False, default_alphabet = IUPAC.IUPACProtein
     >>> getNmers('ABAB', 2, fill_missing = False, default_alphabet = 'ABC')
     OrderedDict([('AB', 1), ('BA', 1)])
     >>> getNmers('ABAB', 2, fill_missing = True, default_alphabet = 'ABC')
-    OrderedDict([('AA', 0),
-             ('AB', 1),
-             ('AC', 0),
-             ('BA', 1),
-             ('BB', 0),
-             ('BC', 0),
-             ('CA', 0),
-             ('CB', 0),
-             ('CC', 0)])
+    OrderedDict([('AA', 0), ('AB', 1), ('AC', 0), ('BA', 1), ('BB', 0), ('BC', 0), ('CA', 0), ('CB', 0), ('CC', 0)])
     >>> getNmers('ABAB', 2, fill_missing = True, default_alphabet = 'AB')
     OrderedDict([('AA', 0), ('AB', 1), ('BA', 1), ('BB', 0)])
     >>> getNmers(['BAB', 'ABA'], 2, fill_missing = False, default_alphabet = 'AB') # Note that it processes each independently
-    [OrderedDict([('AB', 1), ('BA', 1)]), OrderedDict([('AB', 1), ('BA', 1)])]
+    OrderedDict([('BAB', OrderedDict([('AB', 1), ('BA', 1)])), ('ABA', OrderedDict([('AB', 1), ('BA', 1)]))])
     """
     # TODO add a way to check your alphabet and remove underscores (borders of sequences)
     my_nmers = [arg[i:i + n] for i in range(len(arg) - n + 1)]
@@ -324,8 +315,9 @@ def BuildNmerDistanceDict(n, alphabet = IUPAC.IUPACProtein.letters, fistn = 0):
 
     Examples
     --------
-    >>> BuildNmerDistanceDict(1, "PEPT")
-    {'E': {'E': 5.0, 'P': 0.0, 'T': 0.0}, 'P': {'E': 0.0, 'P': 7.0, 'T': 0.0}, 'T': {'E': 0.0, 'P': 0.0, 'T': 5.0}}
+    >>> BuildNmerDistanceDict(1, "PET")
+    SymetricDict([('E', OrderedDict([('E', 5.0), ('P', 0.0), ('T', 0.0)])), ('P', OrderedDict([('E', 0.0), ('P', 7.0), ('T', 0.0)])), ('T', OrderedDict([('E', 0.0), ('P', 0.0), ('T', 5.0)]))])
+
 
     TODO
     ----
@@ -357,7 +349,7 @@ def nmer_knn(sequences, nmer_size,k = 2, default_alphabet = IUPAC.IUPACProtein.l
 
     Examples
     --------
-    >>> testing_windows = [ "ABCDE", "DEFG", "HIJK", "JKHI","ABKI" ]
+    >>> testing_windows = [ "ABCDE", "DEFG", "HIJK", "JKHI", "ABKI" ]
     >>> foo = nmer_knn(testing_windows, 2, 2, default_alphabet= 'ABCDEFGHIJK')
     >>> print(foo)
     [[0 1]
@@ -373,7 +365,7 @@ def nmer_knn(sequences, nmer_size,k = 2, default_alphabet = IUPAC.IUPACProtein.l
     nmer_list = getNmers(sequences, nmer_size, fill_missing = True, default_alphabet= default_alphabet)
     myarray = np.array([
         [int(i) for i in elem.values()]
-        for elem in nmer_list
+        for elem in nmer_list.values()
     ])
     kdt = KDTree(myarray, leaf_size = 20, metric = 'manhattan')
     nn = kdt.query(myarray, k = k, return_distance = False)
