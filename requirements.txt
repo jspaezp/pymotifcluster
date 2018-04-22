@@ -1,0 +1,8 @@
+matplotlib
+Biopython
+itertools
+functools
+random
+networkx
+sklearn
+numpy
