@@ -83,4 +83,5 @@ TODO
 - Implement a way to extract the clusters
 - Implement a way to get whch nmers are the ones predominantly responsible for the grouping
 - refactor the structure of the package
+- clean out the dependencies (currently it depends in waaaay too many packages and uses only 1 or 2 functions from each)
 - MANY MORE
