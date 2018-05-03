@@ -10,7 +10,7 @@ import numpy as np
 import networkx as nx
 from sklearn.neighbors import KDTree
 import matplotlib.pyplot as mpl
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 
 
 # TODO Decide if you want it 2d or scalable ...
@@ -19,7 +19,7 @@ matplotlib.use('Agg')
 class SymetricDict(collections.OrderedDict):
     def __init__(self, keys, *args, **kwargs):
         """
-        A symetric dictionary, view usage examples for a a quick demonstration ...
+        A symetric dictionary, view usage examples for a quick demonstration.
 
         Parameters
         ----------
@@ -31,10 +31,14 @@ class SymetricDict(collections.OrderedDict):
         --------
         >>> foo = SymetricDict(['A', 'B'])
         >>> foo
-        SymetricDict([('A', OrderedDict([('A', None), ('B', None)])), ('B', OrderedDict([('A', None), ('B', None)]))])
-        >>> foo['A', 'B'] = 2 # this replaces the value in both ['A']['B'] and ['B']['A']
+        SymetricDict([('A', OrderedDict([('A', None), ('B', None)])), \
+('B', OrderedDict([('A', None), ('B', None)]))])
+
+        # this replaces the value in both ['A']['B'] and ['B']['A']
+        >>> foo['A', 'B'] = 2
         >>> print(foo)
-        SymetricDict([('A', OrderedDict([('A', None), ('B', 2)])), ('B', OrderedDict([('A', 2), ('B', None)]))])
+        SymetricDict([('A', OrderedDict([('A', None), ('B', 2)])), \
+('B', OrderedDict([('A', 2), ('B', None)]))])
         >>> foo['A', 'C'] = 3 # adds the keys when absent
         >>> print(foo)
         SymetricDict([('A', OrderedDict([('A', None), ('B', 2), ('C', 3)])), \
@@ -43,7 +47,9 @@ class SymetricDict(collections.OrderedDict):
         3
         >>> print(foo['C', 'A'])
         3
-        >>> print(foo['C']['A']) # If you want to you can use the standard double square parens notation ...
+
+        # You can use the standard double square parens notation as well
+        >>> print(foo['C']['A'])
         3
         """
 
@@ -58,7 +64,10 @@ class SymetricDict(collections.OrderedDict):
         if (len(key) is 1) or (type(key) is str):
             val = collections.OrderedDict.__getitem__(self, key)
         else:
-            val = functools.reduce(collections.OrderedDict.__getitem__, key, self)
+            val = functools.reduce(
+                collections.OrderedDict.__getitem__,
+                key,
+                self)
         return val
 
     def __setitem__(self, key, val):
@@ -66,10 +75,16 @@ class SymetricDict(collections.OrderedDict):
             for keys in itertools.permutations(key, 2):
                 for x in keys:
                     if x not in self:
-                        collections.OrderedDict.__setitem__(self, x, collections.OrderedDict())
-                collections.OrderedDict.__setitem__(self[keys[0]], keys[1], val)
+                        collections.OrderedDict.__setitem__(
+                            self,
+                            x,
+                            collections.OrderedDict())
+                collections.OrderedDict.__setitem__(
+                    self[keys[0]],
+                    keys[1],
+                    val)
         else:
-            print("Dont knwo how to deal with that ...")
+            print("Dont know how to deal with that ...")
             print(key)
 
     def __delitem__(self, key):
@@ -83,15 +98,26 @@ class SymetricDict(collections.OrderedDict):
 
     def check_lengths(self):
         second_dim_lens = list([set([len(x) for x in self.values()])])
-        assert len(second_dim_lens) == 1, 'More than one length for the second dimension of the object'
-        assert len(self) == second_dim_lens[0], 'Dim 1 and 2 have differing lengths'
+        assert len(second_dim_lens) == 1,\
+            'More than one length for the second dimension of the object'
+        assert len(self) == second_dim_lens[0],\
+            'Dim 1 and 2 have differing lengths'
         return True
 
-    # TODO implement __instance_check__
+    def __instance_check__(self):
+        # TODO implement __instance_check__
+        # Check that it
+        pass
 
     def closest_neighbors(self):
+        # TODO check that this is stil valid, since now the dict will lazily
+        # complete the values
         all_top_values = [
-            sorted(range(len(i)), key=lambda a: i[a])[-2:]  # TODO, get a way for them not to return themselves ...
+            # the following line sorts the elements in the dict and returns
+            # the top N (2 in this case ...)
+            # TODO add a way to get top n instead of 2 by default
+            sorted(range(len(i)), key=lambda a: i[a])[-2:]
+            # TODO, get a way for them not to return themselves ...
             for i in [list(x.values()) for x in self.values()]
         ]
         return all_top_values
@@ -109,8 +135,8 @@ TODO: make something to check that
 
 def build_2d_dict(combinations):
     """
-    Gets a nested iterable object and returns a nested dictionary with the keys being the elements in the original
-    nested sequence.
+    Gets a nested iterable object and returns a nested dictionary with the keys
+    being the elements in the original nested sequence.
 
     NOTE: Has been deprecated, use a SymetricDict for this task :)
 
@@ -121,7 +147,8 @@ def build_2d_dict(combinations):
     Returns
     -------
     out : dict
-        a nested dictionary, modifies the order of the first index to be alphabetical
+        a nested dictionary, modifies the order of the first index to be
+        alphabetical
 
     Examples
     --------
@@ -129,7 +156,8 @@ def build_2d_dict(combinations):
     >>> print(my_list)
     [('a', 'b'), ('a', 'c'), ('b', 'c')]
     >>> build_2d_dict(itertools.combinations(['a', 'b','c'], 2))
-    {'a': {'b': None, 'c': None}, 'b': {'a': None, 'c': None}, 'c': {'a': None, 'b': None}}
+    {'a': {'b': None, 'c': None}, 'b': {'a': None, 'c': None}, \
+'c': {'a': None, 'b': None}}
 
     """
     combinations = list(combinations)
@@ -163,8 +191,10 @@ def getPermutations(letters, n, sort=True, drop_repeats=True):
 
     Examples
     --------
-    >>> getPermutations("ABA", 2, sort = True, drop_repeats = False) # Note that it outputs repeated elements
+    >>> getPermutations("ABA", 2, sort = True, drop_repeats = False)
     ['AA', 'AA', 'AB', 'AA', 'AA', 'AB', 'BA', 'BA', 'BB']
+
+    # Note that it outputs repeated elements
     >>> getPermutations("ABA", 2, sort = True, drop_repeats = True)
     ['AA', 'AB', 'BA', 'BB']
     """
@@ -173,8 +203,8 @@ def getPermutations(letters, n, sort=True, drop_repeats=True):
     if sort:
         letters = list(letters)
         letters.sort()
-    my_permutations = ["".join(x) for x in itertools.product(letters, repeat=n)]
-    return my_permutations
+    my_permuts = ["".join(x) for x in itertools.product(letters, repeat=n)]
+    return my_permuts
 
 
 class BlosumDictGenerator(SymetricDict):
@@ -187,7 +217,8 @@ class BlosumDictGenerator(SymetricDict):
         sequences : iterable object
             An iterable object whose elements will be used as keys
         scoringmatrx : dict
-            a scoring matrix for the comparissosns that will be carried out, defaults to scoringMatrices.blosum62
+            a scoring matrix for the comparissosns that will be carried out,
+            defaults to scoringMatrices.blosum62
 
         Examples
         --------
@@ -211,7 +242,11 @@ class BlosumDictGenerator(SymetricDict):
         if self[seq1, seq2] is None:
             if verbose:
                 print("Calculating from {} to {}".format(seq1, seq2))
-            self[seq1, seq2] = pairwise2.align.localdx(seq1, seq2, self.scoringmatrx, score_only=True)
+            self[seq1, seq2] = pairwise2.align.localdx(
+                seq1,
+                seq2,
+                self.scoringmatrx,
+                score_only=True)
         else:
             if verbose:
                 print("Skipping calculation from {} to {}".format(seq1, seq2))
@@ -222,10 +257,13 @@ class BlosumDictGenerator(SymetricDict):
     # TODO add a way to force the calculation of all the matrix ...
 
 
-def Build_blosum_distance_dict(sequences, verbose=True, scoring_matrx=scoringMatrices.blosum62):
+def Build_blosum_distance_dict(sequences,
+                               verbose=True,
+                               scoring_matrx=scoringMatrices.blosum62):
     """
-    Gets a list of strings interpretable as sequences with the given dictionary and returns a nested dictionary with
-    the distances between all pairs (as calculated by the smith-waterman algorithm)
+    Gets a list of strings interpretable as sequences with the given
+    dictionary and returns a nested dictionary with the distances between
+    all pairs (as calculated by the smith-waterman algorithm)
 
     Parameters
     ----------
@@ -234,17 +272,20 @@ def Build_blosum_distance_dict(sequences, verbose=True, scoring_matrx=scoringMat
     verbose : logical
         wether the function should print progress output
     scoring_matrx: dict
-        a scoring matrix object as implemented by biopython (defaults to blosum62)
+        a scoring matrix object as implemented by biopython
+        (defaults to blosum62)
 
     Returns
     -------
     out : dict
-        a nested dictionary of the elements whose keys are the provided sequences and the values are the score
+        a nested dictionary of the elements whose keys are the provided
+        sequences and the values are the score
 
     Examples
     --------
     >>> Build_blosum_distance_dict(['PEP', 'PTY', 'TIDE'], verbose = False)
-    SymetricDict([('PEP', OrderedDict([('PEP', 19.0), ('PTY', 7.0), ('TIDE', 5.0)])), \
+    SymetricDict([\
+('PEP', OrderedDict([('PEP', 19.0), ('PTY', 7.0), ('TIDE', 5.0)])), \
 ('PTY', OrderedDict([('PEP', 7.0), ('PTY', 19.0), ('TIDE', 5.0)])), \
 ('TIDE', OrderedDict([('PEP', 5.0), ('PTY', 5.0), ('TIDE', 20.0)]))])
     """
@@ -257,7 +298,11 @@ def Build_blosum_distance_dict(sequences, verbose=True, scoring_matrx=scoringMat
                 continue
             if verbose:
                 print("Calculating from {} to {}".format(x, y))
-            my_dict[x, y] = pairwise2.align.localdx(x, y, scoring_matrx, score_only=True)
+            my_dict[x, y] = pairwise2.align.localdx(
+                x,
+                y,
+                scoring_matrx,
+                score_only=True)
 
     return my_dict
 # TODO add something to incorporate your alphabet
@@ -281,14 +326,17 @@ def getNmers(arg, n, fill_missing=False, default_alphabet=IUPAC.IUPACProtein.let
     >>> getNmers('ABAB', 2, fill_missing = False, default_alphabet = 'ABC')
     OrderedDict([('AB', 1), ('BA', 1)])
     >>> getNmers('ABAB', 2, fill_missing = True, default_alphabet = 'ABC')
-    OrderedDict([('AA', 0), ('AB', 1), ('AC', 0), ('BA', 1), ('BB', 0), ('BC', 0), ('CA', 0), ('CB', 0), ('CC', 0)])
+    OrderedDict([('AA', 0), ('AB', 1), ('AC', 0), ('BA', 1), ('BB', 0), \
+('BC', 0), ('CA', 0), ('CB', 0), ('CC', 0)])
     >>> getNmers('ABAB', 2, fill_missing = True, default_alphabet = 'AB')
     OrderedDict([('AA', 0), ('AB', 1), ('BA', 1), ('BB', 0)])
     >>> getNmers(['BAB', 'ABA'], 2, fill_missing = False, default_alphabet = 'AB')
-    OrderedDict([('BAB', OrderedDict([('AB', 1), ('BA', 1)])), ('ABA', OrderedDict([('AB', 1), ('BA', 1)]))])
+    OrderedDict([('BAB', OrderedDict([('AB', 1), ('BA', 1)])), \
+('ABA', OrderedDict([('AB', 1), ('BA', 1)]))])
     >>> # Note that it processes each independently
     """
-    # TODO add a way to check your alphabet and remove underscores (borders of sequences)
+    # TODO add a way to check your alphabet and remove underscores
+    # (borders of sequences)
     my_nmers = [arg[i:i + n] for i in range(len(arg) - n + 1)]
     my_nmers = {x: x.count(x) for x in my_nmers}
 
@@ -303,7 +351,9 @@ def getNmers(arg, n, fill_missing=False, default_alphabet=IUPAC.IUPACProtein.let
 
 @getNmers.register(list)
 def _(arg, *args, **kwargs):
-    my_nmer_list = collections.OrderedDict((x, getNmers(x, *args, **kwargs)) for x in arg)
+    my_nmer_list = collections.OrderedDict(
+        (x, getNmers(x, *args, **kwargs))
+        for x in arg)
     return my_nmer_list
 
 
@@ -312,8 +362,11 @@ def BuildNmerDistanceDict(n, alphabet=IUPAC.IUPACProtein.letters, fistn=0):
 
     Parameters
     ----------
-    n : length of the nmers that will be generated
-    fistn : optional argument to specify that only certain number of combinations should be used
+    n : int
+        length of the nmers that will be generated
+    fistn : int
+        optional argument to specify that only certain number of
+        combinations should be used
 
     Returns
     -------
@@ -333,14 +386,16 @@ def BuildNmerDistanceDict(n, alphabet=IUPAC.IUPACProtein.letters, fistn=0):
     Use our symetrical dict object as an output
     """
     perms = getPermutations(alphabet, n)
-    # print(str(len(perms))) this prints the number of distances that will be calculated
+    # print(str(len(perms))) this prints the number of distances that
+    # will be calculated
     if fistn is not 0:
         perms = perms[0:fistn]
     distances = Build_blosum_distance_dict(perms, verbose=False)
     return distances
 
 
-# TODO check why BuildNmerDistanceDict(2, 'PEP') would be different than (2, 'PEP')
+# TODO check why BuildNmerDistanceDict(2, 'PEP')
+# would be different than (2, 'PEP') FIXME
 
 
 def nmer_knn(sequences, nmer_size, k=2, default_alphabet=IUPAC.IUPACProtein.letters):
@@ -348,31 +403,37 @@ def nmer_knn(sequences, nmer_size, k=2, default_alphabet=IUPAC.IUPACProtein.lett
 
     Parameters
     ----------
-    sequences : sequences to be used to in splitting to nmers and clustered
-    nmer_size : size of the nmers to build
-    k : Number of neighbors to return
-    default_alphabet : The default alpabet to be used
+    sequences : list
+        sequences to be used to in splitting to nmers and clustered
+    nmer_size : int
+        size of the nmers to build
+    k : int
+        Number of neighbors to return
+    default_alphabet :
+       The default alpabet to be used
 
     Returns
     -------
-    A nested list with the indexes of the nearest neighbors for each sequence provided
+    list
+        A nested list with the indexes of the nearest neighbors for each
+        sequence provided
 
     Examples
     --------
     >>> testing_windows = [ "ABCDE", "DEFG", "HIJK", "JKHI", "ABKI" ]
     >>> foo = nmer_knn(testing_windows, 2, 2, default_alphabet='ABCDEFGHIJK')
     >>> print(foo)
-    [[0 1]
-     [1 0]
-     [2 3]
-     [3 2]
-     [4 0]]
+    [[0, 1], [1, 0], [2, 3], [3, 2], [4, 0]]
 
     """
     # TODO check for the performance of multiple distance metrics in this space
     # TODO check for the performance of multiple nmer sizes
 
-    nmer_list = getNmers(sequences, nmer_size, fill_missing=True, default_alphabet=default_alphabet)
+    nmer_list = getNmers(
+        sequences,
+        nmer_size,
+        fill_missing=True,
+        default_alphabet=default_alphabet)
     myarray = np.array([
         [int(i) for i in elem.values()]
         for elem in nmer_list.values()
@@ -380,22 +441,29 @@ def nmer_knn(sequences, nmer_size, k=2, default_alphabet=IUPAC.IUPACProtein.lett
     kdt = KDTree(myarray, leaf_size=20, metric='manhattan')
     nn = kdt.query(myarray, k=k, return_distance=False)
 
-    return nn
+    return nn.tolist()
 
 
 def knn_to_graph(nn_indeces, labels, labelname='Sequence'):
-    """
+    """Converts the output of KNN to a graph
 
     Parameters
     ----------
-    nn_indeces
-    labels
-    labelname
+    nn_indeces : List[List[int]]
+        Nearest neighbor indexes as returned by sklearn.neighbors.KDTree.query
+    labels : List[str]
+        A list of characters with the names that one would like to give the
+        nodes of the network
+    labelname : str
+        The name one would like to give to the labels (zb. Gene, Sequence ...)
+        Usually woud describe the meaning of the labels.
 
     Returns
     -------
+    networkx.Graph
 
     """
+    # TODO add examples
     g = nx.Graph()
     g.add_nodes_from([x for x, _ in enumerate(nn_indeces)])
 
@@ -417,14 +485,20 @@ def default_graph_plotting(g, labelname='Sequence', colour='r', filename='myfig.
 
     Parameters
     ----------
-    g : A graph object
-    labelname : Node atributes to be used as labels
-    colour : Colour specifications of the nodes
-    filename : file name to which the plot will be saved
+    g : networkx.Graph
+        A graph object
+    labelname : str
+        Node atributes to be used as labels
+    colour : List[str]
+        Colour specifications of the nodes
+    filename : str
+        file name to which the plot will be saved
     """
     pos = nx.spring_layout(g, k=1/3.5, scale=0.5)
-    mpl.figure(num=None, figsize=(10, 10), dpi=150, facecolor='w', edgecolor='k')
-    nx.draw(g, pos, node_color=colour, labels=nx.get_node_attributes(g, labelname), font_size=12, with_labels=True)
+    mpl.figure(num=None, figsize=(10, 10), dpi=150,
+               facecolor='w', edgecolor='k')
+    nx.draw(g, pos, node_color=colour, labels=nx.get_node_attributes(
+        g, labelname), font_size=12, with_labels=True)
     if filename is not None:
         mpl.savefig(filename)
 
@@ -440,58 +514,46 @@ def invert_sequence(seq):
 
 
 @functools.singledispatch
-def flatten(iterable):
+def flatten(iterable, bykeys=True, *args):
+    """Flattens iterables to a single dimension
+
+    Parameters
+    ----------
+    iterable : iter
+        An iterable object with an arbitrarly complex nested structure
+
+    bykeys : bool
+       An optional argument for unnesting dictionaries, states wether one
+       should unnest the keys or the values (True is the keys)
+
+    Returns
+    -------
+    generator
+        a generator objet that will return the elements (unnested) of the
+        parent iterable, one unnested element at a time
+
+    Examples
+    --------
+    >>> list(flatten([[[0, 1], 2, 3], 4]))
+    [0, 1, 2, 3, 4]
+
+    """
     yield iterable
 
 
 @flatten.register(list)
 @flatten.register(set)
 @flatten.register(tuple)
-def _(iterable):
+def _(iterable, bykeys,*args):
     for i in iterable:
         yield from flatten(i)
 
 
-"""
-# Dummy Example
-
-testing_windows = [
-    "ABCDE", "DEFG", "HIJK",
-    "JKHI","ABKI",]
-
-foo = [
-    getNmers(x, 2, fill_missing = True, default_alphabet= 'ABCDEFGHIJK')
-    for x in testing_windows
-]
-
-myarray = np.array([
-    [ int(i) for i in elem.values()]
-    for elem in foo
-])
-
-kdistances = KDTree(myarray, leaf_size = 20, metric = 'manhattan')
-mydistances = kdistances.query(myarray, k =2, return_distance = False) # Returns the closest 2 neighbors to each
-
-# TODO make this a function
-G = nx.Graph()
-G.add_nodes_from([ x for x, _ in enumerate(mydistances)])
-
-edges_list = []
-for x in mydistances:
-    for y in x[1:]:
-        edges_list.append((x[0], y))
-
-G.add_edges_from(edges_list)
-
-for x in G.nodes:
-    G.nodes[x]['Sequence'] = testing_windows[x]
-
-# END TODO make this a function
-
-pos = nx.spring_layout(G, k=1/3.5, scale = 0.5)
-mpl.figure(num=None, figsize=(5, 5), dpi=150, facecolor='w', edgecolor='k')
-nx.draw(G, pos, labels = nx.get_node_attributes(G, 'Sequence'), font_size=12, with_labels=True)
-mpl.savefig("mygraph.png")
-
-
-"""
+@flatten.register(dict)
+def _(iterable, bykeys,*args):
+    if bykeys:
+        for i in iterable:
+            yield from flatten(i, bykeys, *args)
+    else:
+        for i in iterable.values():
+            yield from flatten(i, bykeys, *args)
